@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Food Cost · تكلفة الطعام</title>
+<style>
+:root{--g:#1f6f54;--g2:#e6f2ec;--o:#d9822b;--r:#c0392b;--bg:#f6f3ee;--t:#26302b;--m:#6b756f;--b:#ddd8cf}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;background:var(--bg);color:var(--t)}
+header{background:var(--g);color:#fff;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{font-size:19px;margin:0;flex:1}
+nav{display:flex;gap:6px}
+button,select,input{font:inherit}
+.tab,.btn{border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+.tab{background:rgba(255,255,255,.15);color:#fff}.tab.on{background:#fff;color:var(--g);font-weight:600}
+.btn{background:var(--g);color:#fff}.btn.sec{background:var(--g2);color:var(--g)}.btn.red{background:#fbe9e7;color:var(--r)}
+.lang{background:var(--o);color:#fff}
+main{max-width:1100px;margin:18px auto;padding:0 14px}
+.card{background:#fff;border:1px solid var(--b);border-radius:12px;padding:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.rc{cursor:pointer;transition:.15s}.rc:hover{box-shadow:0 3px 10px rgba(0,0,0,.1)}
+.rc h3{margin:0 0 4px;font-size:16px}.cat{font-size:12px;color:var(--m)}
+.kv{display:flex;justify-content:space-between;font-size:13.5px;margin-top:5px}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600}
+.ok{background:#dff3e7;color:#17724a}.mid{background:#fdf0d9;color:#a8650b}.bad{background:#fbe0dc;color:var(--r)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--g);color:#fff;font-size:13px;padding:7px;text-align:start}
+td{padding:5px;border-bottom:1px solid var(--b);font-size:14px}
+td input,td select,.f input,.f select{width:100%;padding:6px;border:1px solid var(--b);border-radius:6px;background:#fff}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.f{flex:1;min-width:130px}.f label{display:block;font-size:12px;color:var(--m);margin-bottom:3px}
+.two{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}
+@media(max-width:800px){.two{grid-template-columns:1fr}}
+.res{background:var(--g2);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.res b{font-size:20px;display:block}.res span{font-size:12px;color:var(--m)}
+.bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.bar input[type=search]{flex:1;min-width:160px;padding:8px;border:1px solid var(--b);border-radius:8px}
+.hide{display:none}
+@media print{header,.bar,.noprint,nav{display:none!important}body{background:#fff}.card{border:0}}
+</style>
+</head>
+<body>
+<header>
+<h1 id="ttl"></h1>
+<nav>
+<button class="tab" data-v="wiz"></button>
+<button class="tab" data-v="recipes"></button>
+<button class="tab" data-v="ingr"></button>
+<button class="tab" data-v="cro"></button>
+<button class="tab" data-v="sec"></button>
+<button class="tab" data-v="set"></button>
+</nav>
+<button class="tab lang" id="lg">العربية</button>
+</header>
+<main id="app"></main>
+
+<script>
+const T={
+fr:{title:"Food Cost · Calcul du coût matière",recipes:"Recettes",ingr:"Mercuriale",set:"Réglages",cro:"Croissants",croT:"Pâte de base (un lot)",yield:"Pièces par lot",varT:"Types et formes de croissants",addV:"+ Ajouter un type / une forme",shape:"Forme",factor:"Taille (1 = standard)",extra:"Garniture / ingrédients en plus (par pièce)",batch:"Coût du lot",perPc:"Coût par pièce",pcs:"Pièce",delV:"Supprimer ce type ?",nV:"Nouveau croissant",sum:"Résumé",sec:"Sections",secT:"Gérer les sections (FR / AR)",addS:"+ Ajouter une section",nS:"Nouvelle section",nRec:"recette(s)",delS:"Supprimer la section ?",secUsed:"Cette section contient des recettes : elles passeront dans la première section restante.",secLast:"Il faut garder au moins une section.",search:"Rechercher une recette…",newr:"+ Nouvelle recette",all:"Toutes",
+portion:"portion(s)",pvttc:"Prix de vente TTC",fc:"Food cost",gm:"Marge brute",nm:"Marge nette",name:"Nom de la recette",cat:"Catégorie",nport:"Nombre de portions",
+ing:"Ingrédient",qty:"Qté",unit:"Unité",cost:"Coût",add:"+ Ajouter un ingrédient",loss:"Pertes %",chg:"Charges %",tva:"TVA %",costPort:"Coût matière par portion",
+pvht:"Prix de vente HT",lossAmt:"Pertes",chgAmt:"Charges",save:"Enregistrer",del:"Supprimer",print:"Imprimer la fiche",back:"← Retour",
+sugg:"Prix conseillé TTC",target:"Food cost cible %",good:"Excellent",ok:"Correct",bad:"Trop élevé",price:"Prix d'achat",per:"par",addI:"+ Ajouter un produit",
+exp:"Exporter les données",imp:"Importer",defaults:"Valeurs par défaut des nouvelles recettes",cur:"Devise",sure:"Supprimer ?",total:"Coût total du plat",
+notes:"Notes de préparation",none:"Aucune recette.",unk:"(à choisir)",saved:"Enregistré"},
+ar:{title:"تكلفة الطعام · حساب ثمن الوصفات",recipes:"الوصفات",ingr:"لائحة المواد",set:"الإعدادات",cro:"الكرواصون",croT:"العجينة الأساسية (دفعة وحدة)",yield:"عدد القطع فالدفعة",varT:"أنواع وأشكال الكرواصون",addV:"+ إضافة نوع / شكل",shape:"الشكل",factor:"الحجم (1 = عادي)",extra:"الحشو / مواد زايدة (للقطعة)",batch:"تكلفة الدفعة",perPc:"تكلفة القطعة",pcs:"قطعة",delV:"واش تمسح هاد النوع؟",nV:"كرواصون جديد",sum:"الملخص",sec:"الأقسام",secT:"تسيير الأقسام (فرنسية / عربية)",addS:"+ إضافة قسم",nS:"قسم جديد",nRec:"وصفة",delS:"واش تمسح هاد القسم؟",secUsed:"هاد القسم فيه وصفات: غادي يتنقلو للقسم الأول الباقي.",secLast:"خاصك تبقى على الأقل قسم واحد.",search:"بحث عن وصفة…",newr:"+ وصفة جديدة",all:"الكل",
+portion:"حصة",pvttc:"ثمن البيع بالضريبة",fc:"نسبة التكلفة",gm:"الهامش الخام",nm:"الهامش الصافي",name:"اسم الوصفة",cat:"الصنف",nport:"عدد الحصص",
+ing:"المادة",qty:"الكمية",unit:"الوحدة",cost:"التكلفة",add:"+ إضافة مادة",loss:"الضياع %",chg:"المصاريف %",tva:"الضريبة TVA %",costPort:"تكلفة المواد للحصة",
+pvht:"ثمن البيع بدون ضريبة",lossAmt:"الضياع",chgAmt:"المصاريف",save:"حفظ",del:"حذف",print:"طباعة البطاقة",back:"← رجوع",
+sugg:"الثمن المقترح بالضريبة",target:"نسبة التكلفة المستهدفة %",good:"ممتاز",ok:"مقبول",bad:"غالي بزاف",price:"ثمن الشراء",per:"لكل",addI:"+ إضافة منتوج",
+exp:"تصدير المعطيات",imp:"استيراد",defaults:"القيم الافتراضية للوصفات الجديدة",cur:"العملة",sure:"واش بصح تمسح؟",total:"التكلفة الإجمالية للطبق",
+notes:"ملاحظات التحضير",none:"لا توجد وصفات.",unk:"(اختر)",saved:"تم الحفظ"}
+};
+// unit -> [base unit, factor]
+const U={g:["kg",.001],kg:["kg",1],ml:["l",.001],cl:["l",.01],l:["l",1],pc:["pc",1]};
+const PU=["kg","l","pc"];
+const uid=()=>Math.random().toString(36).slice(2,9);
+let S=JSON.parse(localStorage.getItem("fc2")||"null")||seed();
+let lang=localStorage.getItem("fcl")||"fr",view="wiz",cur=null,flt="Tout",q="";
+function seed(){
+ const I=[["Filet de poulet","دجاج (فيلي)",70,"kg"],["Riz","أرز",14,"kg"],["Huile d'olive","زيت الزيتون",65,"l"],["Tomate","طماطم",5,"kg"],["Laitue","خس",8,"kg"],["Oeuf","بيض",1.2,"pc"],["Farine","دقيق",6,"kg"],["Sucre","سكر",8,"kg"],["Beurre","زبدة",90,"kg"],["Pistache","فستق",320,"kg"],["Orange","برتقال",6,"kg"],["Boeuf haché","لحم مفروم",95,"kg"],["Pain burger","خبز برغر",2,"pc"],["Fromage","جبن",70,"kg"]].map(a=>({id:uid(),fr:a[0],ar:a[1],price:a[2],unit:a[3]}));
+ const f=n=>I.find(i=>i.fr==n).id;
+ const R=[
+ {n:"Salade au poulet",a:"سلطة بالدجاج",c:"Salades",p:1,ttc:35,l:[[f("Filet de poulet"),150,"g"],[f("Laitue"),80,"g"],[f("Tomate"),60,"g"],[f("Huile d'olive"),15,"ml"]]},
+ {n:"Cheeseburger",a:"تشيز برغر",c:"Sandwiches",p:1,ttc:45,l:[[f("Boeuf haché"),150,"g"],[f("Pain burger"),1,"pc"],[f("Fromage"),30,"g"],[f("Tomate"),40,"g"]]},
+ {n:"Jus d'orange",a:"عصير البرتقال",c:"Boissons",p:1,ttc:15,l:[[f("Orange"),400,"g"],[f("Sucre"),10,"g"]]},
+ {n:"Cake à la pistache",a:"كيك بالفستق",c:"Desserts",p:8,ttc:30,l:[[f("Farine"),250,"g"],[f("Sucre"),200,"g"],[f("Beurre"),200,"g"],[f("Oeuf"),4,"pc"],[f("Pistache"),80,"g"]]}
+ ].map(r=>({id:uid(),name:r.n,nameAr:r.a,cat:r.c,portions:r.p,ttc:r.ttc,loss:5,chg:15,tva:10,notes:"",lines:r.l.map(x=>({ing:x[0],qty:x[1],unit:x[2]}))}));
+ const C=defCats();R.forEach(r=>{r.cat=r.cat=="Desserts"?C[2].id:C[0].id});R.splice(3,0,{id:uid(),name:"Croissant",nameAr:"كرواصون",cat:C[1].id,portions:10,ttc:6,loss:5,chg:15,tva:10,notes:"",lines:[[f("Farine"),500,"g"],[f("Beurre"),250,"g"],[f("Sucre"),50,"g"],[f("Oeuf"),2,"pc"]].map(x=>({ing:x[0],qty:x[1],unit:x[2]}))});
+ return{cats:C,ing:I,rec:R,set:{loss:5,chg:15,tva:10,target:30,cur:"MAD"}};
+}
+function defCats(){return[{id:uid(),fr:"Café",ar:"المقهى"},{id:uid(),fr:"Boulangerie et viennoiserie",ar:"المخبزة والكرواصون"},{id:uid(),fr:"Pâtisserie",ar:"الحلويات"}]}
+if(!S.cats){S.cats=defCats();const m={Plats:0,Boissons:0,Salades:0,Sandwiches:0,Desserts:2};S.rec.forEach(r=>{r.cat=S.cats[m[r.cat]??0].id})}
+function ensureCro(){
+ if(S.cro)return;
+ const add=(fr,ar,price,unit)=>{let i=S.ing.find(x=>x.fr==fr);if(!i){i={id:uid(),fr,ar,price,unit};S.ing.push(i)}return i.id};
+ const F=add("Farine","دقيق",6,"kg"),B=add("Beurre","زبدة",90,"kg"),Su=add("Sucre","سكر",8,"kg"),O=add("Oeuf","بيض",1.2,"pc"),L=add("Lait","حليب",7,"l"),Y=add("Levure boulangère","خميرة",60,"kg"),Se=add("Sel","ملح",3,"kg"),Ch=add("Chocolat noir","شوكولاتة",90,"kg"),Am=add("Crème d'amande","كريمة اللوز",110,"kg"),Fr=add("Fromage","جبن",70,"kg");
+ const L1=(i,q,u)=>({ing:i,qty:q,unit:u});
+ S.cro={yield:30,loss:5,chg:15,tva:10,base:[L1(F,1000,"g"),L1(B,500,"g"),L1(Su,100,"g"),L1(L,250,"ml"),L1(O,2,"pc"),L1(Y,30,"g"),L1(Se,20,"g")],
+  variants:[{id:uid(),fr:"Croissant nature",ar:"كرواصون عادي",shape:"Croissant",factor:1,ttc:8,extra:[]},
+  {id:uid(),fr:"Pain au chocolat",ar:"بان أو شوكولا",shape:"Rectangle",factor:1,ttc:10,extra:[L1(Ch,25,"g")]},
+  {id:uid(),fr:"Croissant aux amandes",ar:"كرواصون باللوز",shape:"Croissant",factor:1.1,ttc:12,extra:[L1(Am,40,"g")]},
+  {id:uid(),fr:"Croissant au fromage",ar:"كرواصون بالجبن",shape:"Triangle",factor:1,ttc:10,extra:[L1(Fr,30,"g")]}]};
+ save();
+}
+const save=()=>localStorage.setItem("fc2",JSON.stringify(S));
+ensureCro();
+const t=k=>T[lang][k];
+const catName=id=>{const c=S.cats.find(x=>x.id==id)||S.cats[0];return c?(lang=="ar"&&c.ar?c.ar:c.fr):""};
+const fmt=n=>(isFinite(n)?n:0).toLocaleString(lang=="ar"?"ar-MA-u-nu-latn":"fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function ingName(i){return lang=="ar"&&i.ar?i.ar:i.fr}
+function lineCost(l){
+ const i=S.ing.find(x=>x.id==l.ing);if(!i)return 0;
+ const [b,fac]=U[l.unit]||["kg",1];
+ if(b!=i.unit)return 0;
+ return l.qty*fac*i.price;
+}
+function calc(r){
+ const base=r.lines.reduce((s,l)=>s+lineCost(l),0);
+ const lossA=base*r.loss/100,total=base+lossA,perP=total/Math.max(1,r.portions);
+ const pvht=r.ttc/(1+r.tva/100),chgA=pvht*r.chg/100;
+ const gross=pvht-perP,net=gross-chgA;
+ return{base,lossA,total,perP,pvht,chgA,gross,net,fc:pvht?perP/pvht*100:0,netPct:pvht?net/pvht*100:0,
+  sugg:perP/(S.set.target/100)*(1+r.tva/100)};
+}
+const badge=fc=>fc<=S.set.target?`<span class="badge ok">${t("good")}</span>`:fc<=S.set.target+10?`<span class="badge mid">${t("ok")}</span>`:`<span class="badge bad">${t("bad")}</span>`;
+function render(){
+ document.documentElement.lang=lang;document.documentElement.dir=lang=="ar"?"rtl":"ltr";
+ document.getElementById("ttl").textContent=t("title");
+ document.getElementById("lg").textContent=lang=="ar"?"Français":"العربية";
+ document.querySelectorAll(".tab[data-v]").forEach(b=>{b.textContent=t(b.dataset.v);b.classList.toggle("on",b.dataset.v==view&&!cur)});
+ const app=document.getElementById("app");
+ if(cur){app.innerHTML=editor(S.rec.find(r=>r.id==cur));bindEditor();return}
+ app.innerHTML=view=="wiz"?wizView():view=="recipes"?list():view=="ingr"?ingr():view=="sec"?sections():view=="cro"?croView():settings();
+ bind();
+}
+function list(){
+ const cats=["Tout",...S.cats.map(c=>c.id)];
+ const rs=S.rec.filter(r=>(flt=="Tout"||r.cat==flt)&&((r.name+r.nameAr).toLowerCase().includes(q.toLowerCase())));
+ return `<div class="bar"><input type="search" id="q" placeholder="${t("search")}" value="${esc(q)}">
+ ${cats.map(c=>`<button class="btn ${flt==c?"":"sec"}" data-f="${c}">${c=="Tout"?t("all"):esc(catName(c))}</button>`).join("")}
+ <button class="btn" id="nr" style="background:var(--o)">${t("newr")}</button></div>
+ <div class="grid">${rs.map(r=>{const c=calc(r);return `<div class="card rc" data-r="${r.id}"><h3>${esc(lang=="ar"&&r.nameAr?r.nameAr:r.name)}</h3>
+ <div class="cat">${esc(catName(r.cat))} · ${r.portions} ${t("portion")}</div>${badge(c.fc)}
+ <div class="kv"><span>${t("pvttc")}</span><b>${fmt(r.ttc)} ${S.set.cur}</b></div>
+ <div class="kv"><span>${t("fc")}</span><b>${fmt(c.fc)}%</b></div>
+ <div class="kv"><span>${t("nm")}</span><b>${fmt(c.net)} ${S.set.cur}</b></div></div>`}).join("")||`<p>${t("none")}</p>`}</div>`;
+}
+function editor(r){
+ const c=calc(r);
+ const opts=sel=>`<option value="">${t("unk")}</option>`+S.ing.map(i=>`<option value="${i.id}" ${i.id==sel?"selected":""}>${esc(ingName(i))}</option>`).join("");
+ const uo=s=>Object.keys(U).map(u=>`<option ${u==s?"selected":""}>${u}</option>`).join("");
+ return `<div class="bar noprint"><button class="btn sec" id="bk">${t("back")}</button><span style="flex:1"></span>
+ <button class="btn sec" onclick="window.print()">${t("print")}</button><button class="btn red" id="dl">${t("del")}</button></div>
+ <div class="card"><div class="row">
+ <div class="f" style="flex:2"><label>${t("name")} (FR)</label><input data-k="name" value="${esc(r.name)}"></div>
+ <div class="f" style="flex:2"><label>${t("name")} (AR)</label><input data-k="nameAr" dir="rtl" value="${esc(r.nameAr)}"></div>
+ <div class="f"><label>${t("cat")}</label><select data-k="cat">${S.cats.map(x=>`<option value="${x.id}" ${x.id==r.cat?"selected":""}>${esc(catName(x.id))}</option>`).join("")}</select></div>
+ <div class="f"><label>${t("nport")}</label><input type="number" min="1" data-k="portions" value="${r.portions}"></div></div>
+ <div class="two"><div>
+ <table><tr><th>${t("ing")}</th><th style="width:90px">${t("qty")}</th><th style="width:80px">${t("unit")}</th><th style="width:100px">${t("cost")}</th><th style="width:34px" class="noprint"></th></tr>
+ ${r.lines.map((l,i)=>`<tr><td><select data-l="${i}" data-k="ing">${opts(l.ing)}</select></td>
+ <td><input type="number" min="0" step="any" data-l="${i}" data-k="qty" value="${l.qty}"></td>
+ <td><select data-l="${i}" data-k="unit">${uo(l.unit)}</select></td>
+ <td>${fmt(lineCost(l))}</td><td class="noprint"><button class="btn red" data-x="${i}" style="padding:3px 8px">×</button></td></tr>`).join("")}</table>
+ <p class="noprint"><button class="btn sec" id="al">${t("add")}</button></p>
+ <div class="row"><div class="f"><label>${t("loss")}</label><input type="number" step="any" data-k="loss" value="${r.loss}"></div>
+ <div class="f"><label>${t("chg")}</label><input type="number" step="any" data-k="chg" value="${r.chg}"></div>
+ <div class="f"><label>${t("tva")}</label><input type="number" step="any" data-k="tva" value="${r.tva}"></div>
+ <div class="f"><label>${t("pvttc")} (${S.set.cur})</label><input type="number" step="any" data-k="ttc" value="${r.ttc}"></div></div>
+ <div class="f"><label>${t("notes")}</label><input data-k="notes" value="${esc(r.notes)}"></div>
+ </div><div id="res">${results(r,c)}</div></div></div>`;
+}
+function results(r,c){
+ const cu=S.set.cur;
+ return `<div class="res"><span>${t("costPort")}</span><b>${fmt(c.perP)} ${cu}</b></div>
+ <div class="res"><span>${t("fc")}</span><b>${fmt(c.fc)}% ${badge(c.fc)}</b></div>
+ <div class="res"><span>${t("pvht")}</span><b>${fmt(c.pvht)} ${cu}</b></div>
+ <div class="res"><span>${t("gm")}</span><b>${fmt(c.gross)} ${cu}</b></div>
+ <div class="res" style="background:#dff3e7"><span>${t("nm")} (${fmt(c.netPct)}%)</span><b>${fmt(c.net)} ${cu}</b></div>
+ <div class="res" style="background:#fdf0d9"><span>${t("sugg")} (${t("target")} ${S.set.target}%)</span><b>${fmt(c.sugg)} ${cu}</b></div>`;
+}
+function bindEditor(){
+ const r=S.rec.find(x=>x.id==cur);
+ document.getElementById("bk").onclick=()=>{cur=null;render()};
+ document.getElementById("dl").onclick=()=>{if(confirm(t("sure"))){S.rec=S.rec.filter(x=>x!=r);save();cur=null;render()}};
+ document.getElementById("al").onclick=()=>{r.lines.push({ing:"",qty:0,unit:"g"});save();render()};
+ document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{r.lines.splice(+b.dataset.x,1);save();render()});
+ document.querySelectorAll("[data-k]").forEach(el=>{
+  const h=()=>{const k=el.dataset.k,num=el.type=="number";const v=num?(parseFloat(el.value)||0):el.value;
+   if(el.dataset.l!==undefined)r.lines[+el.dataset.l][k]=v;else r[k]=v;save();
+   document.getElementById("res").innerHTML=results(r,calc(r));
+   if(el.dataset.l!==undefined&&el.tagName=="SELECT")render();
+   else{const tr=el.closest("tr");if(tr)tr.children[3].textContent=fmt(lineCost(r.lines[+el.dataset.l]))}};
+  el.oninput=h;el.onchange=()=>{if(el.tagName=="SELECT")h()};
+ });
+}
+function ingr(){
+ return `<div class="card"><table><tr><th>${t("ing")} (FR)</th><th>${t("ing")} (AR)</th><th style="width:110px">${t("price")} (${S.set.cur})</th><th style="width:90px">${t("per")}</th><th style="width:34px"></th></tr>
+ ${S.ing.map((i,n)=>`<tr><td><input data-i="${n}" data-k="fr" value="${esc(i.fr)}"></td><td><input dir="rtl" data-i="${n}" data-k="ar" value="${esc(i.ar)}"></td>
+ <td><input type="number" step="any" data-i="${n}" data-k="price" value="${i.price}"></td>
+ <td><select data-i="${n}" data-k="unit">${PU.map(u=>`<option ${u==i.unit?"selected":""}>${u}</option>`).join("")}</select></td>
+ <td><button class="btn red" data-xi="${n}" style="padding:3px 8px">×</button></td></tr>`).join("")}</table>
+ <p><button class="btn sec" id="ai">${t("addI")}</button></p></div>`;
+}
+function croCalc(v){
+ const C=S.cro,batch=C.base.reduce((a,l)=>a+lineCost(l),0)*(1+C.loss/100);
+ const dough=batch/Math.max(1,C.yield)*v.factor,ex=v.extra.reduce((a,l)=>a+lineCost(l),0),cost=dough+ex;
+ const pvht=v.ttc/(1+C.tva/100),chg=pvht*C.chg/100,net=pvht-cost-chg;
+ return{batch,dough,ex,cost,pvht,net,fc:pvht?cost/pvht*100:0,sugg:cost/(S.set.target/100)*(1+C.tva/100)};
+}
+function cLines(arr,key){
+ const opts=sel=>`<option value="">${t("unk")}</option>`+S.ing.map(i=>`<option value="${i.id}" ${i.id==sel?"selected":""}>${esc(ingName(i))}</option>`).join("");
+ const uo=s=>Object.keys(U).map(u=>`<option ${u==s?"selected":""}>${u}</option>`).join("");
+ return `<table><tr><th>${t("ing")}</th><th style="width:90px">${t("qty")}</th><th style="width:80px">${t("unit")}</th><th style="width:90px">${t("cost")}</th><th style="width:34px"></th></tr>
+ ${arr.map((l,i)=>`<tr><td><select data-ca="${key}" data-ix="${i}" data-fld="ing">${opts(l.ing)}</select></td>
+ <td><input type="number" min="0" step="any" data-ca="${key}" data-ix="${i}" data-fld="qty" value="${l.qty}"></td>
+ <td><select data-ca="${key}" data-ix="${i}" data-fld="unit">${uo(l.unit)}</select></td><td>${fmt(lineCost(l))}</td>
+ <td><button class="btn red" data-cx="${key}" data-ix="${i}" style="padding:3px 8px">×</button></td></tr>`).join("")}</table>
+ <p><button class="btn sec" data-cadd="${key}">${t("add")}</button></p>`;
+}
+function croView(){
+ const C=S.cro,cu=S.set.cur,rows=C.variants.map(v=>({v,c:croCalc(v)}));
+ const batch=rows.length?rows[0].c.batch:C.base.reduce((a,l)=>a+lineCost(l),0)*(1+C.loss/100);
+ return `<div class="card"><h3 style="margin-top:0">${t("croT")}</h3>
+ <div class="row"><div class="f"><label>${t("yield")}</label><input type="number" min="1" data-cs="yield" value="${C.yield}"></div>
+ <div class="f"><label>${t("loss")}</label><input type="number" step="any" data-cs="loss" value="${C.loss}"></div>
+ <div class="f"><label>${t("chg")}</label><input type="number" step="any" data-cs="chg" value="${C.chg}"></div>
+ <div class="f"><label>${t("tva")}</label><input type="number" step="any" data-cs="tva" value="${C.tva}"></div></div>
+ ${cLines(C.base,"base")}
+ <div class="row"><div class="res f"><span>${t("batch")}</span><b>${fmt(batch)} ${cu}</b></div><div class="res f"><span>${t("perPc")} (1 = ${t("pcs")})</span><b>${fmt(batch/Math.max(1,C.yield))} ${cu}</b></div></div></div>
+ <div class="card" style="margin-top:14px"><h3 style="margin-top:0">${t("sum")}</h3><table><tr><th>${t("varT")}</th><th>${t("perPc")}</th><th>${t("pvttc")}</th><th>${t("fc")}</th><th>${t("nm")}</th><th>${t("sugg")}</th></tr>
+ ${rows.map(({v,c})=>`<tr><td>${esc(lang=="ar"&&v.ar?v.ar:v.fr)}</td><td>${fmt(c.cost)}</td><td>${fmt(v.ttc)}</td><td>${fmt(c.fc)}% ${badge(c.fc)}</td><td>${fmt(c.net)}</td><td>${fmt(c.sugg)}</td></tr>`).join("")}</table></div>
+ <h3>${t("varT")}</h3><div class="bar"><button class="btn" id="av" style="background:var(--o)">${t("addV")}</button></div>
+ ${rows.map(({v,c})=>`<div class="card" style="margin-bottom:12px"><div class="row">
+ <div class="f" style="flex:2"><label>Français</label><input data-vf="${v.id}" data-fld="fr" value="${esc(v.fr)}"></div>
+ <div class="f" style="flex:2"><label>العربية</label><input dir="rtl" data-vf="${v.id}" data-fld="ar" value="${esc(v.ar)}"></div>
+ <div class="f"><label>${t("shape")}</label><input data-vf="${v.id}" data-fld="shape" value="${esc(v.shape)}"></div>
+ <div class="f"><label>${t("factor")}</label><input type="number" step="any" data-vf="${v.id}" data-fld="factor" value="${v.factor}"></div>
+ <div class="f"><label>${t("pvttc")} (${cu})</label><input type="number" step="any" data-vf="${v.id}" data-fld="ttc" value="${v.ttc}"></div></div>
+ <div class="two"><div><b style="font-size:13px">${t("extra")}</b>${cLines(v.extra,"v:"+v.id)}</div>
+ <div><div class="res"><span>${t("perPc")}</span><b>${fmt(c.cost)} ${cu}</b></div><div class="res"><span>${t("fc")}</span><b>${fmt(c.fc)}% ${badge(c.fc)}</b></div>
+ <div class="res" style="background:#dff3e7"><span>${t("nm")}</span><b>${fmt(c.net)} ${cu}</b></div><button class="btn red" data-cv="${v.id}">${t("del")}</button></div></div></div>`).join("")}`;
+}
+function cArr(key){return key=="base"?S.cro.base:S.cro.variants.find(v=>"v:"+v.id==key).extra}
+function bindCro(){
+ const num=el=>el.type=="number"?(parseFloat(el.value)||0):el.value;
+ document.querySelectorAll("[data-cs]").forEach(el=>el.onchange=()=>{S.cro[el.dataset.cs]=num(el);save();render()});
+ document.querySelectorAll("[data-ca]").forEach(el=>el.onchange=()=>{cArr(el.dataset.ca)[+el.dataset.ix][el.dataset.fld]=num(el);save();render()});
+ document.querySelectorAll("[data-cx]").forEach(b=>b.onclick=()=>{cArr(b.dataset.cx).splice(+b.dataset.ix,1);save();render()});
+ document.querySelectorAll("[data-cadd]").forEach(b=>b.onclick=()=>{cArr(b.dataset.cadd).push({ing:"",qty:0,unit:"g"});save();render()});
+ document.querySelectorAll("[data-vf]").forEach(el=>el.onchange=()=>{S.cro.variants.find(v=>v.id==el.dataset.vf)[el.dataset.fld]=num(el);save();render()});
+ document.querySelectorAll("[data-cv]").forEach(b=>b.onclick=()=>{if(confirm(t("delV"))){S.cro.variants=S.cro.variants.filter(v=>v.id!=b.dataset.cv);save();render()}});
+ const av=document.getElementById("av");if(av)av.onclick=()=>{S.cro.variants.push({id:uid(),fr:t("nV")=="Nouveau croissant"?"Nouveau croissant":"Nouveau croissant",ar:"كرواصون جديد",shape:"",factor:1,ttc:0,extra:[]});save();render()};
+}
+function sections(){
+ return `<div class="card"><h3 style="margin-top:0">${t("secT")}</h3><table><tr><th>Français</th><th>العربية</th><th style="width:110px">#</th><th style="width:34px"></th></tr>
+ ${S.cats.map((c,n)=>`<tr><td><input data-c="${n}" data-k="fr" value="${esc(c.fr)}"></td><td><input dir="rtl" data-c="${n}" data-k="ar" value="${esc(c.ar)}"></td>
+ <td>${S.rec.filter(r=>r.cat==c.id).length} ${t("nRec")}</td><td><button class="btn red" data-xc="${n}" style="padding:3px 8px">×</button></td></tr>`).join("")}</table>
+ <p><button class="btn sec" id="ac">${t("addS")}</button></p></div>`;
+}
+function settings(){
+ const s=S.set;
+ return `<div class="card"><h3 style="margin-top:0">${t("defaults")}</h3><div class="row">
+ <div class="f"><label>${t("loss")}</label><input type="number" data-s="loss" value="${s.loss}"></div>
+ <div class="f"><label>${t("chg")}</label><input type="number" data-s="chg" value="${s.chg}"></div>
+ <div class="f"><label>${t("tva")}</label><input type="number" data-s="tva" value="${s.tva}"></div>
+ <div class="f"><label>${t("target")}</label><input type="number" data-s="target" value="${s.target}"></div>
+ <div class="f"><label>${t("cur")}</label><input data-s="cur" value="${esc(s.cur)}"></div></div>
+ <button class="btn sec" id="ex">${t("exp")}</button> <label class="btn sec" style="display:inline-block">${t("imp")}<input type="file" id="im" accept=".json" class="hide"></label></div>`;
+}
+function bind(){
+ if(view=="wiz"){bindWiz();return}
+ if(view=="cro"){bindCro();return}
+ document.querySelectorAll(".rc").forEach(e=>e.onclick=()=>{cur=e.dataset.r;render()});
+ document.querySelectorAll("[data-f]").forEach(e=>e.onclick=()=>{flt=e.dataset.f;render()});
+ const qi=document.getElementById("q");if(qi)qi.oninput=()=>{q=qi.value;const p=qi.selectionStart;render();const n=document.getElementById("q");n.focus();n.setSelectionRange(p,p)};
+ const nr=document.getElementById("nr");if(nr)nr.onclick=()=>{const r={id:uid(),name:"Nouvelle recette",nameAr:"وصفة جديدة",cat:(S.cats.find(c=>c.id==flt)||S.cats[0]).id,portions:1,ttc:0,loss:S.set.loss,chg:S.set.chg,tva:S.set.tva,notes:"",lines:[]};S.rec.unshift(r);save();cur=r.id;render()};
+ document.querySelectorAll("[data-i]").forEach(el=>el.onchange=()=>{S.ing[+el.dataset.i][el.dataset.k]=el.type=="number"?(parseFloat(el.value)||0):el.value;save()});
+ document.querySelectorAll("[data-xi]").forEach(b=>b.onclick=()=>{S.ing.splice(+b.dataset.xi,1);save();render()});
+ document.querySelectorAll("[data-c]").forEach(el=>el.onchange=()=>{S.cats[+el.dataset.c][el.dataset.k]=el.value;save()});
+ document.querySelectorAll("[data-xc]").forEach(b=>b.onclick=()=>{const n=+b.dataset.xc,c=S.cats[n];
+  if(S.cats.length<2){alert(t("secLast"));return}
+  const used=S.rec.some(r=>r.cat==c.id);if(!confirm(t("delS")+(used?"\n"+t("secUsed"):"")))return;
+  S.cats.splice(n,1);S.rec.forEach(r=>{if(r.cat==c.id)r.cat=S.cats[0].id});if(flt==c.id)flt="Tout";save();render()});
+ const ac=document.getElementById("ac");if(ac)ac.onclick=()=>{S.cats.push({id:uid(),fr:t("nS")=="Nouvelle section"?"Nouvelle section":"Nouvelle section",ar:"قسم جديد"});save();render()};
+ const ai=document.getElementById("ai");if(ai)ai.onclick=()=>{S.ing.push({id:uid(),fr:"",ar:"",price:0,unit:"kg"});save();render()};
+ document.querySelectorAll("[data-s]").forEach(el=>el.onchange=()=>{S.set[el.dataset.s]=el.type=="number"?(parseFloat(el.value)||0):el.value;save()});
+ const ex=document.getElementById("ex");if(ex)ex.onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:"application/json"}));a.download="foodcost.json";a.click()};
+ const im=document.getElementById("im");if(im)im.onchange=()=>{const f=im.files[0];if(!f)return;f.text().then(x=>{try{const d=JSON.parse(x);if(d.ing&&d.rec&&d.set){if(!d.cro){S=d;S.cro=null;ensureCro()}if(!d.cats){d.cats=defCats();d.rec.forEach(r=>r.cat=d.cats[0].id)}S=d;ensureCro();save();render()}}catch(e){}})};
+}
+document.querySelectorAll(".tab[data-v]").forEach(b=>b.onclick=()=>{view=b.dataset.v;cur=null;render()});
+document.getElementById("lg").onclick=()=>{lang=lang=="fr"?"ar":"fr";localStorage.setItem("fcl",lang);render()};
+const P=new URLSearchParams(location.search);
+if(P.get("lang"))lang=P.get("lang");if(P.get("view"))view=P.get("view");if(P.get("open"))cur=S.rec[+P.get("open")].id;
+// ===== Guided croissant costing (wizard) =====
+const W={
+fr:{tab:"Guide croissant",t1:"1. Pâte (détrempe)",t2:"2. Pâtons et beurre de tourage",t3:"3. Façonnage",t4:"4. Résumé",
+ next:"Suivant →",prev:"← Précédent",
+ h1:"Pâte de base : tout le mélange",d1:"Saisissez les ingrédients de la pâte pour un pétrissage complet (ex. 10 kg).",
+ tot:"Poids total de la pâte",lossD:"Perte pétrin/division %",split:"Poids d'un pâton avant beurre (kg)",nPat:"Nombre de pâtons",costD:"Coût de la pâte",perKgD:"Coût par kg de pâte",
+ h2:"Beurre de tourage (pour 1 pâton)",d2:"Chaque pâton reçoit du beurre de feuilletage. Pâton = pâte + beurre.",
+ lossL:"Perte au tourage/parures %",pW:"Poids d'un pâton (pâte + beurre)",pC:"Coût d'un pâton",pK:"Coût par kg de pâton prêt",useW:"Poids utilisable",
+ h3:"Chaque forme se calcule selon son poids, sa garniture et le nombre de pièces",addS:"+ Ajouter une forme",nS:"Nouvelle forme",photo:"Photo",addPh:"Ajouter une photo",
+ w:"Poids de pâton par pièce (g)",pcs:"Pièces par pâton",auto:"auto",fill:"Garniture par pièce",rej:"Rebut %",ttc:"Prix de vente TTC",
+ costPc:"Coût par pièce",fc:"Food cost",net:"Marge nette / pièce",pPat:"Pièces par pâton",pDough:"Part pâton",pFill:"Garniture",pExtra:"Autres frais",
+ ex:"Frais par pièce (MAD)",energy:"Énergie / four",pack:"Emballage",labor:"Main d'œuvre",
+ h4:"Résumé par forme",rev:"Recette par pâton",all:"Si tout le lot",del:"Supprimer",sure:"Supprimer ?",
+ unit:"Unité",qty:"Qté",ing:"Ingrédient",cost:"Coût",add:"+ Ajouter un ingrédient",unk:"(à choisir)",pr:"Prix à renseigner dans la Mercuriale",note:"Valeurs d'exemple : remplacez-les par les vôtres.",
+ butter:"Beurre de tourage",nameFr:"Nom (FR)",nameAr:"Nom (AR)",sg:"Gain par pâton",bad:"Trop élevé",good:"Excellent",ok:"Correct"},
+ar:{tab:"دليل الكرواصون",t1:"1. العجينة",t2:"2. الباطو وزبدة التوريق",t3:"3. التشكيل",t4:"4. الملخص",
+ next:"التالي →",prev:"← السابق",
+ h1:"العجينة الأساسية: الخلطة كاملة",d1:"دخّل مواد العجينة لعجنة كاملة (مثلا 10 كلغ).",
+ tot:"الوزن الإجمالي للعجينة",lossD:"ضياع العجن والتقسيم %",split:"وزن الباطو قبل الزبدة (كلغ)",nPat:"عدد الباطوات",costD:"تكلفة العجينة",perKgD:"تكلفة الكيلو من العجينة",
+ h2:"زبدة التوريق (لباطو واحد)",d2:"كل باطو كيتزاد ليه الزبدة ديال التوريق. الباطو = عجينة + زبدة.",
+ lossL:"ضياع التوريق والقطع %",pW:"وزن الباطو (عجينة + زبدة)",pC:"تكلفة الباطو",pK:"تكلفة كيلو الباطو الجاهز",useW:"الوزن الصالح",
+ h3:"كل شكل كيتحسب على حساب وزنو وحشوه وعدد القطع لي كيخرج",addS:"+ إضافة شكل",nS:"شكل جديد",photo:"الصورة",addPh:"إضافة صورة",
+ w:"وزن العجين للقطعة (غ)",pcs:"عدد القطع من الباطو",auto:"تلقائي",fill:"الحشو للقطعة",rej:"الضياع %",ttc:"ثمن البيع",
+ costPc:"تكلفة القطعة",fc:"نسبة التكلفة",net:"الربح الصافي للقطعة",pPat:"قطع من الباطو",pDough:"حصة العجين",pFill:"الحشو",pExtra:"مصاريف أخرى",
+ ex:"مصاريف للقطعة (درهم)",energy:"الطاقة / الفرن",pack:"التغليف",labor:"اليد العاملة",
+ h4:"ملخص كل شكل",rev:"مدخول الباطو",all:"إلا كامل الدفعة",del:"حذف",sure:"واش بصح تمسح؟",
+ unit:"الوحدة",qty:"الكمية",ing:"المادة",cost:"التكلفة",add:"+ إضافة مادة",unk:"(اختر)",pr:"الثمن كيتدخل فلائحة المواد",note:"هادي قيم مثال: بدلها بديالك.",
+ butter:"زبدة التوريق",nameFr:"الاسم (فرنسية)",nameAr:"الاسم (عربية)",sg:"ربح الباطو",bad:"غالي بزاف",good:"ممتاز",ok:"مقبول"}
+};
+Object.assign(T.fr,{wiz:W.fr.tab});Object.assign(T.ar,{wiz:W.ar.tab});
+const wt=k=>W[lang][k];
+function wIng(fr,ar,price,unit){let i=S.ing.find(x=>x.fr==fr);if(!i){i={id:uid(),fr,ar,price,unit};S.ing.push(i)}return i.id}
+function ensureWiz(){
+ if(S.wiz)return;
+ const F=wIng("Farine","دقيق",6,"kg"),B=wIng("Beurre","زبدة",90,"kg"),Su=wIng("Sucre","سكر",8,"kg"),L=wIng("Lait","حليب",7,"l"),Y=wIng("Levure boulangère","خميرة",60,"kg"),Se=wIng("Sel","ملح",3,"kg"),E=wIng("Eau","ماء",0.01,"l"),Ch=wIng("Chocolat noir","شوكولاتة",90,"kg"),Am=wIng("Crème d'amande","كريمة اللوز",110,"kg"),Fr=wIng("Fromage","جبن",70,"kg");
+ const L1=(i,q,u)=>({ing:i,qty:q,unit:u});
+ S.wiz={step:1,loss:3,split:3,
+  dough:[L1(F,5500,"g"),L1(E,1300,"ml"),L1(L,2000,"ml"),L1(Su,700,"g"),L1(Se,110,"g"),L1(Y,180,"g"),L1(B,150,"g")],
+  lam:{loss:8,lines:[L1(B,800,"g")]},
+  ex:{energy:0.3,pack:0.2,labor:0.5},
+  shapes:[{id:uid(),fr:"Croissant nature",ar:"كرواصون عادي",img:"",w:70,pcs:0,rej:3,ttc:8,fill:[]},
+   {id:uid(),fr:"Pain au chocolat",ar:"بان أو شوكولا",img:"",w:80,pcs:0,rej:3,ttc:10,fill:[L1(Ch,25,"g")]},
+   {id:uid(),fr:"Croissant aux amandes",ar:"كرواصون باللوز",img:"",w:80,pcs:0,rej:3,ttc:12,fill:[L1(Am,40,"g")]}]};
+ save();
+}
+ensureWiz();
+const wG=l=>({g:1,kg:1000,ml:1,cl:10,l:1000,pc:50}[l.unit]||1)*l.qty;
+function wCalc(){
+ const w=S.wiz,dW=w.dough.reduce((a,l)=>a+wG(l),0),dC=w.dough.reduce((a,l)=>a+lineCost(l),0);
+ const dUse=dW*(1-w.loss/100),cgD=dUse?dC/dUse:0,splitG=w.split*1000,nPat=splitG?dW/splitG:0;
+ const bW=w.lam.lines.reduce((a,l)=>a+wG(l),0),bC=w.lam.lines.reduce((a,l)=>a+lineCost(l),0);
+ const pW=splitG+bW,pC=splitG*cgD+bC,pUse=pW*(1-w.lam.loss/100),cgP=pUse?pC/pUse:0;
+ return{dW,dC,dUse,cgD,splitG,nPat,bW,bC,pW,pC,pUse,cgP};
+}
+function sCalc(s,c){
+ const w=S.wiz,pcsAuto=s.w>0?Math.floor(c.pUse/s.w):0,pcs=s.pcs>0?s.pcs:pcsAuto;
+ const fill=s.fill.reduce((a,l)=>a+lineCost(l),0),dough=s.w*c.cgP,ex=w.ex.energy+w.ex.pack+w.ex.labor;
+ const cost=(dough+fill)/(1-s.rej/100)+ex,pvht=s.ttc/(1+S.set.tva/100),net=pvht-cost;
+ return{pcs,pcsAuto,fill,dough,ex,cost,pvht,net,fc:pvht?cost/pvht*100:0};
+}
+const wbadge=fc=>fc<=S.set.target?`<span class="badge ok">${wt("good")}</span>`:fc<=S.set.target+10?`<span class="badge mid">${wt("ok")}</span>`:`<span class="badge bad">${wt("bad")}</span>`;
+function wLines(arr,key){
+ const opts=sel=>`<option value="">${wt("unk")}</option>`+S.ing.map(i=>`<option value="${i.id}" ${i.id==sel?"selected":""}>${esc(ingName(i))}</option>`).join("");
+ const uo=s=>Object.keys(U).map(u=>`<option ${u==s?"selected":""}>${u}</option>`).join("");
+ return `<table><tr><th>${wt("ing")}</th><th style="width:90px">${wt("qty")}</th><th style="width:76px">${wt("unit")}</th><th style="width:80px">${wt("cost")}</th><th style="width:34px"></th></tr>
+ ${arr.map((l,i)=>`<tr><td><select data-wa="${key}" data-ix="${i}" data-fld="ing">${opts(l.ing)}</select></td>
+ <td><input type="number" min="0" step="any" data-wa="${key}" data-ix="${i}" data-fld="qty" value="${l.qty}"></td>
+ <td><select data-wa="${key}" data-ix="${i}" data-fld="unit">${uo(l.unit)}</select></td><td>${fmt(lineCost(l))}</td>
+ <td><button class="btn red" data-wx="${key}" data-ix="${i}" style="padding:3px 8px">×</button></td></tr>`).join("")}</table>
+ <p><button class="btn sec" data-wadd="${key}">${wt("add")}</button></p>`;
+}
+const wf=(label,key,val,step)=>`<div class="f"><label>${label}</label><input type="number" step="${step||"any"}" min="0" data-wk="${key}" value="${val}"></div>`;
+const res=(l,v,bg)=>`<div class="res" ${bg?`style="background:${bg}"`:""}><span>${l}</span><b>${v}</b></div>`;
+function wizView(){
+ const w=S.wiz,c=wCalc(),cu=S.set.cur,st=w.step;
+ const steps=[1,2,3,4].map(n=>`<button class="btn ${n==st?"":"sec"}" data-ws="${n}">${wt("t"+n)}</button>`).join("");
+ let body="";
+ if(st==1)body=`<div class="card"><h3 style="margin-top:0">${wt("h1")}</h3><p style="color:var(--m)">${wt("d1")} ${wt("note")}</p>
+  ${wLines(w.dough,"dough")}<div class="row">${wf(wt("lossD"),"loss",w.loss)}${wf(wt("split"),"split",w.split)}</div>
+  <div class="row"><div class="f">${res(wt("tot"),fmt(c.dW/1000)+" kg")}</div><div class="f">${res(wt("nPat"),fmt(c.nPat))}</div><div class="f">${res(wt("costD"),fmt(c.dC)+" "+cu)}</div><div class="f">${res(wt("perKgD"),fmt(c.cgD*1000)+" "+cu)}</div></div></div>`;
+ if(st==2)body=`<div class="card"><h3 style="margin-top:0">${wt("h2")}</h3><p style="color:var(--m)">${wt("d2")}</p>
+  ${wLines(w.lam.lines,"lam")}<div class="row">${wf(wt("lossL"),"lamloss",w.lam.loss)}</div>
+  <div class="row"><div class="f">${res(wt("pW"),fmt(c.pW)+" g")}</div><div class="f">${res(wt("useW"),fmt(c.pUse)+" g")}</div><div class="f">${res(wt("pC"),fmt(c.pC)+" "+cu)}</div><div class="f">${res(wt("pK"),fmt(c.cgP*1000)+" "+cu,"#fdf0d9")}</div></div></div>`;
+ if(st==3)body=`<div class="card"><h3 style="margin-top:0">${wt("ex")}</h3><div class="row">${wf(wt("energy"),"energy",w.ex.energy)}${wf(wt("pack"),"pack",w.ex.pack)}${wf(wt("labor"),"labor",w.ex.labor)}</div></div>
+  <h3>${wt("h3")}</h3><div class="bar"><button class="btn" id="wsa" style="background:var(--o)">${wt("addS")}</button></div>
+  ${w.shapes.map(s=>{const r=sCalc(s,c);return `<div class="card" style="margin-bottom:12px"><div class="row">
+  <div style="width:96px"><div style="width:96px;height:96px;border:1px dashed var(--b);border-radius:10px;background:#faf8f4 ${s.img?`url(${s.img}) center/cover`:""};display:flex;align-items:center;justify-content:center;color:var(--m);font-size:11px;text-align:center">${s.img?"":wt("photo")}</div>
+  <label class="btn sec" style="display:block;margin-top:6px;padding:4px;font-size:12px;text-align:center">📷<input type="file" accept="image/*" data-wph="${s.id}" class="hide"></label></div>
+  <div class="f" style="flex:2"><label>${wt("nameFr")}</label><input data-ws2="${s.id}" data-fld="fr" value="${esc(s.fr)}"></div>
+  <div class="f" style="flex:2"><label>${wt("nameAr")}</label><input dir="rtl" data-ws2="${s.id}" data-fld="ar" value="${esc(s.ar)}"></div></div>
+  <div class="row"><div class="f"><label>${wt("w")}</label><input type="number" step="any" data-ws2="${s.id}" data-fld="w" value="${s.w}"></div>
+  <div class="f"><label>${wt("pcs")} (${wt("auto")}: ${r.pcsAuto})</label><input type="number" step="1" min="0" placeholder="${r.pcsAuto}" data-ws2="${s.id}" data-fld="pcs" value="${s.pcs||""}"></div>
+  <div class="f"><label>${wt("rej")}</label><input type="number" step="any" data-ws2="${s.id}" data-fld="rej" value="${s.rej}"></div>
+  <div class="f"><label>${wt("ttc")} (${cu})</label><input type="number" step="any" data-ws2="${s.id}" data-fld="ttc" value="${s.ttc}"></div></div>
+  <div class="two"><div><b style="font-size:13px">${wt("fill")}</b>${wLines(s.fill,"s:"+s.id)}</div>
+  <div>${res(wt("pPat"),r.pcs)}${res(wt("costPc"),fmt(r.cost)+" "+cu)}${res(wt("fc"),fmt(r.fc)+"% "+wbadge(r.fc))}${res(wt("net"),fmt(r.net)+" "+cu,"#dff3e7")}<button class="btn red" data-wd="${s.id}">${wt("del")}</button></div></div></div>`}).join("")}`;
+ if(st==4)body=`<div class="card"><h3 style="margin-top:0">${wt("h4")}</h3><div style="overflow-x:auto"><table><tr><th></th><th></th><th>${wt("pPat")}</th><th>${wt("costPc")}</th><th>${wt("ttc")}</th><th>${wt("fc")}</th><th>${wt("net")}</th><th>${wt("sg")}</th><th>${wt("all")}</th></tr>
+  ${w.shapes.map(s=>{const r=sCalc(s,c);return `<tr><td>${s.img?`<img src="${s.img}" style="width:48px;height:48px;object-fit:cover;border-radius:8px">`:""}</td><td>${esc(lang=="ar"&&s.ar?s.ar:s.fr)}</td><td>${r.pcs}</td><td>${fmt(r.cost)}</td><td>${fmt(s.ttc)}</td><td>${fmt(r.fc)}% ${wbadge(r.fc)}</td><td>${fmt(r.net)}</td><td>${fmt(r.net*r.pcs)}</td><td>${Math.floor(r.pcs*c.nPat)} ${wt("pcs").split(" ")[0]} · ${fmt(r.net*r.pcs*c.nPat)} ${cu}</td></tr>`}).join("")}</table></div></div>`;
+ return `<div class="bar noprint">${steps}</div>${body}
+ <div class="bar noprint" style="margin-top:14px"><button class="btn sec" id="wp" ${st==1?"disabled":""}>${wt("prev")}</button><span style="flex:1"></span><button class="btn" id="wn" ${st==4?"disabled":""}>${wt("next")}</button></div>`;
+}
+function wArr(key){return key=="dough"?S.wiz.dough:key=="lam"?S.wiz.lam.lines:S.wiz.shapes.find(s=>"s:"+s.id==key).fill}
+function bindWiz(){
+ const w=S.wiz,num=el=>el.type=="number"?(parseFloat(el.value)||0):el.value,go=()=>{save();render()};
+ document.querySelectorAll("[data-ws]").forEach(b=>b.onclick=()=>{w.step=+b.dataset.ws;go()});
+ const p=document.getElementById("wp"),n=document.getElementById("wn");
+ if(p)p.onclick=()=>{w.step=Math.max(1,w.step-1);go();scrollTo(0,0)};if(n)n.onclick=()=>{w.step=Math.min(4,w.step+1);go();scrollTo(0,0)};
+ document.querySelectorAll("[data-wk]").forEach(el=>el.onchange=()=>{const k=el.dataset.wk,v=num(el);if(k=="lamloss")w.lam.loss=v;else if(["energy","pack","labor"].includes(k))w.ex[k]=v;else w[k]=v;go()});
+ document.querySelectorAll("[data-wa]").forEach(el=>el.onchange=()=>{wArr(el.dataset.wa)[+el.dataset.ix][el.dataset.fld]=num(el);go()});
+ document.querySelectorAll("[data-wx]").forEach(b=>b.onclick=()=>{wArr(b.dataset.wx).splice(+b.dataset.ix,1);go()});
+ document.querySelectorAll("[data-wadd]").forEach(b=>b.onclick=()=>{wArr(b.dataset.wadd).push({ing:"",qty:0,unit:"g"});go()});
+ document.querySelectorAll("[data-ws2]").forEach(el=>el.onchange=()=>{w.shapes.find(s=>s.id==el.dataset.ws2)[el.dataset.fld]=num(el);go()});
+ document.querySelectorAll("[data-wd]").forEach(b=>b.onclick=()=>{if(confirm(wt("sure"))){w.shapes=w.shapes.filter(s=>s.id!=b.dataset.wd);go()}});
+ const a=document.getElementById("wsa");if(a)a.onclick=()=>{w.shapes.push({id:uid(),fr:"Nouvelle forme",ar:"شكل جديد",img:"",w:70,pcs:0,rej:3,ttc:0,fill:[]});go()};
+ document.querySelectorAll("[data-wph]").forEach(el=>el.onchange=()=>{const f=el.files[0];if(!f)return;const im=new Image(),u=URL.createObjectURL(f);
+  im.onload=()=>{const k=240/Math.max(im.width,im.height,240)*(im.width>240||im.height>240?1:1),cw=Math.round(im.width*Math.min(1,240/Math.max(im.width,im.height))),ch=Math.round(im.height*Math.min(1,240/Math.max(im.width,im.height)));
+   const cv=document.createElement("canvas");cv.width=cw;cv.height=ch;cv.getContext("2d").drawImage(im,0,0,cw,ch);
+   w.shapes.find(s=>s.id==el.dataset.wph).img=cv.toDataURL("image/jpeg",.72);URL.revokeObjectURL(u);go()};im.src=u});
+}
+
+render();
+</script>
+</body>
+</html>
